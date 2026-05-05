@@ -1,0 +1,20 @@
+OpenAI was founded in 2015 by Sam Altman, Elon Musk, Greg Brockman, Ilya Sutskever, Wojciech Zaremba, and John Schulman.
+In 2019, Microsoft invested $1 billion in OpenAI to support the development of artificial general intelligence.
+Sam Altman is the CEO of OpenAI, while Greg Brockman serves as the President.
+ChatGPT, a large language model developed by OpenAI, was released in November 2022.
+Microsoft expanded its partnership with OpenAI in 2023 with a multi-year, multi-billion dollar investment.
+Google launched Gemini, its own advanced AI model, in 2023 to compete with OpenAI's GPT-4.
+DeepMind, a subsidiary of Alphabet (Google's parent company), was founded by Demis Hassabis, Shane Legg, and Mustafa Suleyman in 2010.
+Alphabet acquired DeepMind in 2014 for approximately $500 million.
+Sundar Pichai is the CEO of both Alphabet and Google.
+NVIDIA, led by CEO Jensen Huang, provides the H100 GPUs that power most modern LLM training.
+Anthropic was founded in 2021 by former OpenAI executives Daniela Amodei and Dario Amodei.
+Amazon invested $4 billion in Anthropic in 2023 to secure a stake in the generative AI market.
+Meta released Llama, an open-source large language model, in 2023.
+Mark Zuckerberg is the founder and CEO of Meta.
+In 2024, Microsoft announced the formation of Microsoft AI, a new organization led by Mustafa Suleyman.
+Satya Nadella has been the CEO of Microsoft since 2014.
+Apple announced Apple Intelligence in 2024, integrating AI across its device ecosystem.
+Tim Cook is the CEO of Apple.
+Mistral AI, a French AI startup, was founded in 2023 by former researchers from Meta and Google DeepMind.
+Tesla, led by Elon Musk, is developing Grok through its xAI subsidiary.
