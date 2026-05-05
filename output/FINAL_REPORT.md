@@ -11,7 +11,7 @@ Toàn bộ mã nguồn được tổ chức theo cấu trúc module chuyên nghi
 ## 2. Đồ thị tri thức (Knowledge Graph)
 Đồ thị được xây dựng trên Neo4j Desktop với các thực thể (Organization, Person, Product, Technology) và các mối quan hệ (FOUNDED_BY, INVESTED_IN, CEO_OF, DEVELOPED, v.v.).
 
-![Knowledge Graph Visualization](output/visualization.svg)
+*Ảnh chụp màn hình đồ thị tri thức: output/visualization.svg*
 
 ## 3. Bảng so sánh kết quả 20 câu hỏi Benchmark
 Dưới đây là tóm tắt kết quả so sánh giữa Flat RAG và GraphRAG:
