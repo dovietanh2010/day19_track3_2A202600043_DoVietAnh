@@ -1,4 +1,5 @@
 import numpy as np
+import faiss
 from typing import List
 from openai import OpenAI
 from app.config import Config
@@ -8,7 +9,7 @@ class FlatRAG:
         self.client = OpenAI(api_key=Config.OPENAI_API_KEY)
         self.corpus_path = corpus_path
         self.chunks = self._load_and_chunk()
-        self.embeddings = []
+        self.index_flat = None
 
     def _load_and_chunk(self) -> List[str]:
         with open(self.corpus_path, "r", encoding="utf-8") as f:
@@ -24,18 +25,30 @@ class FlatRAG:
         return response.data[0].embedding
 
     def index(self):
+        embeddings = []
         for chunk in self.chunks:
-            self.embeddings.append(self._get_embedding(chunk))
-        self.embeddings = np.array(self.embeddings)
+            embeddings.append(self._get_embedding(chunk))
+        
+        embeddings_array = np.array(embeddings).astype('float32')
+        
+        # Normalize vectors for cosine similarity (using IndexFlatIP)
+        faiss.normalize_L2(embeddings_array)
+        
+        dimension = embeddings_array.shape[1]
+        self.index_flat = faiss.IndexFlatIP(dimension)
+        self.index_flat.add(embeddings_array)
 
     def retrieve(self, query: str, k: int = Config.TOP_K) -> List[str]:
-        query_embedding = self._get_embedding(query)
-        # Cosine similarity
-        similarities = np.dot(self.embeddings, query_embedding) / (
-            np.linalg.norm(self.embeddings, axis=1) * np.linalg.norm(query_embedding)
-        )
-        top_indices = np.argsort(similarities)[-k:][::-1]
-        return [self.chunks[i] for i in top_indices]
+        if self.index_flat is None:
+            raise ValueError("Index not initialized. Call index() first.")
+            
+        query_embedding = np.array([self._get_embedding(query)]).astype('float32')
+        faiss.normalize_L2(query_embedding)
+        
+        # Search in FAISS index
+        scores, indices = self.index_flat.search(query_embedding, k)
+        
+        return [self.chunks[i] for i in indices[0] if i != -1]
 
     def query(self, user_query: str) -> dict:
         relevant_chunks = self.retrieve(user_query)

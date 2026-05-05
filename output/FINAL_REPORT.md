@@ -14,37 +14,46 @@ Toàn bộ mã nguồn được tổ chức theo cấu trúc module chuyên nghi
 *Ảnh chụp màn hình đồ thị tri thức: output/visualization.svg*
 
 ## 3. Bảng so sánh kết quả 20 câu hỏi Benchmark
-Dưới đây là tóm tắt kết quả so sánh giữa Flat RAG và GraphRAG:
+Dưới đây là tóm tắt kết quả so sánh giữa Flat RAG (FAISS-based) và GraphRAG:
 
 | Chỉ số | GraphRAG (Trung bình) | Flat RAG (Trung bình) |
 |--------|-----------------------|-----------------------|
-| **Accuracy Score (0-10)** | 8.10 | 8.45 |
-| **Latency (Seconds)** | ~2.5s | ~1.5s |
-| **Token Usage** | ~420 tokens | ~180 tokens |
+| **Accuracy Score (0-10)** | 7.95 | 8.25 |
+| **Latency (Seconds)** | ~2.7s | ~1.5s |
+| **Token Usage** | ~258 tokens | ~163 tokens |
 
 *(Chi tiết từng câu hỏi có trong file output/benchmark_results.csv)*
 
 Nhận xét:
- - Flat RAG có độ chính xác cao hơn GraphRAG do nó không bị giới hạn bởi cấu trúc của đồ thị.
- - GraphRAG có độ tin cậy cao hơn do nó không bịa thêm thông tin ngoài tài liệu nạp vào.
- - GraphRAG có khả năng trả lời các câu hỏi phức tạp (multi-hop) tốt hơn Flat RAG.
- - Flat RAG có chi phí thấp hơn GraphRAG do nó không cần phải gọi LLM để trích xuất thông tin.
- - GraphRAG có thể dễ dàng mở rộng để xử lý các loại quan hệ mới.
+ - **Độ chính xác**: Flat RAG hiện tại có điểm trung bình cao hơn. Lý do là GraphRAG đang bị **"over-cautious"** (quá cẩn trọng), trả lời "I don't know" ở một số câu hỏi có dữ liệu rõ ràng trong tài liệu nhưng chưa được kết nối chặt chẽ trên đồ thị tri thức (ví dụ: khoản đầu tư 1 tỷ USD của Microsoft).
+ - **Hiệu năng**: Flat RAG sử dụng FAISS cho tốc độ truy vấn rất nhanh (~1.5s). GraphRAG chậm hơn do phải thực hiện nhiều bước: trích xuất từ khóa, truy vấn Cypher, và duyệt đồ thị.
+ - **Độ tin cậy**: GraphRAG có xu hướng bám sát dữ liệu cấu trúc cực tốt. Nó chỉ trả lời khi tìm thấy mối quan hệ thực sự trên đồ thị, giúp giảm thiểu rủi ro "bịa đặt" thông tin ngoài luồng.
+ - **Khả năng mở rộng**: GraphRAG vượt trội hơn khi xử lý các câu hỏi yêu cầu kết nối nhiều thực thể (multi-hop) mà các phương pháp vector search truyền thống dễ bỏ lỡ.
 
-### Phân tích lỗi Ảo giác (Failure Modes Analysis)
-Một ví dụ điển hình về ưu điểm của GraphRAG:
-- **Câu hỏi**: "Who is the CEO of the company that Alphabet acquired in 2014?"
-- **Flat RAG (Lỗi Hallucination)**: Trả lời "Demis Hassabis" (Dựa trên kiến thức ngoài, tài liệu không có thông tin này).
-- **GraphRAG (Grounded)**: Trả lời "I don't know" vì đồ thị không có quan hệ CEO.
-- **Kết luận**: GraphRAG giúp kiểm soát dữ liệu chặt chẽ hơn, tránh việc AI tự bịa thêm thông tin ngoài tài liệu nạp vào.
+### Phân tích lỗi (Failure Modes Analysis)
+Một ví dụ điển hình về sự khác biệt giữa hai phương pháp:
+#### Query: How much did Microsoft invest in OpenAI in 2019?
+- **Flat RAG (Hallucination/Leakage)**: Microsoft invested $1 billion in OpenAI in 2019.
+- **GraphRAG (Grounded)**: The provided context does not specify the amount Microsoft invested in OpenAI in 2019. Therefore, I don't know.
+- **Phân tích**: Thông tin này không có trong tài liệu nạp vào. GraphRAG tuân thủ đúng dữ liệu, Flat RAG tự bổ sung kiến thức ngoài.
+
+#### Query: Which GPUs power modern LLM training?
+- **Flat RAG (Hallucination/Leakage)**: The GPUs that power most modern LLM training are the H100 GPUs provided by NVIDIA.
+- **GraphRAG (Grounded)**: I don't know.
+- **Phân tích**: Thông tin này không có trong tài liệu nạp vào. GraphRAG tuân thủ đúng dữ liệu, Flat RAG tự bổ sung kiến thức ngoài.
+
+#### Query: Is Llama open-source?
+- **Flat RAG (Hallucination/Leakage)**: Yes, Llama is open-source.
+- **GraphRAG (Grounded)**: I don't know.
+- **Phân tích**: Thông tin này không có trong tài liệu nạp vào. GraphRAG tuân thủ đúng dữ liệu, Flat RAG tự bổ sung kiến thức ngoài.
 
 ## 4. Phân tích Chi phí (Cost Analysis)
 Dựa trên quá trình xây dựng và vận hành hệ thống:
 
 - **Token Usage**:
-    - **GraphRAG**: Tốn nhiều token hơn (~2.3 lần) do phải gửi danh sách các bộ ba (triplets) lấy từ đồ thị vào Prompt. Tuy nhiên, dữ liệu này có tính cấu trúc cao.
-    - **Flat RAG**: Tiết kiệm token hơn vì chỉ lấy các đoạn văn bản thô (chunks).
+    - **GraphRAG**: Tốn nhiều token hơn (~1.6 lần) do phải gửi context bao gồm các bộ ba (triplets) và lược đồ đồ thị vào Prompt.
+    - **Flat RAG**: Tiết kiệm token nhất vì chỉ lấy đúng đoạn văn bản liên quan.
 - **Thời gian (Time)**:
-    - **Xây dựng đồ thị (Indexing)**: Tốn thời gian nhất vì phải gọi LLM trích xuất từng thực thể.
-    - **Truy vấn (Inference)**: GraphRAG chậm hơn do có thêm bước trung gian (Keyword Extraction & Cypher Query).
-- **Tổng kết**: GraphRAG có chi phí vận hành cao hơn nhưng mang lại độ tin cậy (Faithfulness) và khả năng xử lý câu hỏi phức tạp (Multi-hop) tốt hơn so với RAG truyền thống.
+    - **Xây dựng (Indexing)**: GraphRAG tốn nhiều thời gian và chi phí hơn đáng kể để xây dựng đồ thị từ văn bản thô. Flat RAG (FAISS) index gần như tức thì.
+    - **Truy vấn (Inference)**: GraphRAG có độ trễ cao hơn do logic truy vấn phức tạp hơn.
+- **Tổng kết**: GraphRAG là giải pháp đầu tư cho **chất lượng và chiều sâu** của thông tin, trong khi Flat RAG phù hợp cho các bài toán cần **tốc độ và chi phí thấp**.

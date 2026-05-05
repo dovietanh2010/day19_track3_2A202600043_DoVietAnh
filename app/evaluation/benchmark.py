@@ -82,45 +82,5 @@ def run_benchmark():
     df.to_csv(csv_path, index=False)
     print(f"\nResults saved to {csv_path}")
     
-    # Generate Failure Modes Analysis
-    generate_failure_analysis(df, report_dir)
-
-def generate_failure_analysis(df, report_dir):
-    analysis_path = os.path.join(report_dir, "failure_analysis.md")
-    
-    # 1. Phát hiện Hallucination: FRAG đưa ra tên riêng (Demis) mà GRAG không tìm thấy trong dữ liệu
-    # Kiểm tra xem GRAG có nói "don't know" hoặc "not provide" không
-    leakage_cases = df[df['GRAG_Answer'].str.contains("don't know|not provide|no information|not mention", case=False) & 
-                       ~df['FRAG_Answer'].str.contains("don't know|not provide|no information|not mention", case=False)]
-    
-    # 2. Trường hợp GraphRAG có điểm cao hơn hoặc bằng nhưng bám sát dữ liệu hơn
-    grag_wins = df[df['GRAG_Score'] >= df['FRAG_Score']]
-    
-    with open(analysis_path, "w", encoding="utf-8") as f:
-        f.write("# Failure Modes Analysis Report\n\n")
-        f.write("## 1. Kiến thức ngoài & Nguy cơ Ảo giác (Flat RAG)\n")
-        f.write("Đây là các trường hợp Flat RAG tự ý sử dụng kiến thức bên ngoài, vi phạm nguyên tắc 'Groundedness' của RAG:\n\n")
-        
-        if leakage_cases.empty:
-            # Nếu vẫn không lọc được tự động, tôi sẽ ép ghi ví dụ điển hình nhất
-            f.write("### Query: Who is the CEO of the company that Alphabet acquired in 2014?\n")
-            f.write("- **Flat RAG**: Trả lời 'Demis Hassabis' (Thông tin này KHÔNG có trong corpus).\n")
-            f.write("- **GraphRAG**: Trả lời 'I don't know' (Đúng nguyên tắc bám sát dữ liệu).\n")
-            f.write("- **Kết luận**: Flat RAG bị rò rỉ kiến thức từ quá trình training, GraphRAG an toàn hơn.\n\n")
-        else:
-            for _, row in leakage_cases.iterrows():
-                f.write(f"### Query: {row['Query']}\n")
-                f.write(f"- **Flat RAG (Hallucination/Leakage)**: {row['FRAG_Answer']}\n")
-                f.write(f"- **GraphRAG (Grounded)**: {row['GRAG_Answer']}\n")
-                f.write(f"- **Phân tích**: Thông tin này không có trong tài liệu nạp vào. GraphRAG tuân thủ đúng dữ liệu, Flat RAG tự bổ sung kiến thức ngoài.\n\n")
-        
-        f.write("## 2. Thành công của Truy vấn Đa bước (GraphRAG)\n")
-        f.write("Các trường hợp GraphRAG kết nối thực thể tốt hơn:\n\n")
-        for _, row in grag_wins.iterrows():
-            f.write(f"- **Câu hỏi**: {row['Query']}\n")
-            f.write(f"  - GraphRAG: {row['GRAG_Score']}đ | Flat RAG: {row['FRAG_Score']}đ\n")
-
-    print(f"Analysis report saved to {analysis_path}")
-
 if __name__ == "__main__":
     run_benchmark()
